@@ -8,15 +8,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @SpringBootApplication
 @RestController
-public class VoiceSocialMediaServerApplication {
+public class VoiceSocialMediaServer {
 
 	public static void main(String[] args) {
-		SpringApplication.run(VoiceSocialMediaServerApplication.class, args);
-	}
-
-	@GetMapping("/hello")
-	public String Hello(@RequestParam(value = "name", defaultValue = "World") String name){
-		return String.format("Hello %s!", name);
+		SpringApplication.run(VoiceSocialMediaServer.class, args);
 	}
 
 }
