@@ -16,12 +16,13 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Autowired
     UserDetailsService userDetailsService;
+    @Autowired
 
     @Override
     protected void configure(AuthenticationManagerBuilder auth) throws Exception {
         // TODO Auto-generated method stub
         auth.inMemoryAuthentication()
-        .withUser("bozo").password("bozo").roles("ADMIN");
+        .withUser("bozo").password(getPasswordEncoder().encode("bozo")).roles("ADMIN");
 
         auth.userDetailsService(userDetailsService);
     }
@@ -41,7 +42,6 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
 
     @Bean
     public PasswordEncoder getPasswordEncoder() {
-        // CHANGE THIS IS NOT SECURE USE SHA-256 ENCODING WITH SALT!
         return new BCryptPasswordEncoder();
     }
 
