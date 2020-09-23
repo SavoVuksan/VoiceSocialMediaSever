@@ -18,4 +18,6 @@ public class VSMServer {
 		SpringApplication.run(VSMServer.class, args);
 	}
 
+	
+
 }
