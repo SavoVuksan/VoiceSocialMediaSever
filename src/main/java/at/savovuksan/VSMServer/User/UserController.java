@@ -1,22 +1,34 @@
 package at.savovuksan.VSMServer.User;
 
+import java.lang.StackWalker.Option;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import javax.persistence.EntityNotFoundException;
+import javax.validation.Valid;
 import javax.websocket.server.PathParam;
 
+import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.MethodParameter;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
 
 @RestController
 @RequestMapping("/users")
@@ -45,15 +57,38 @@ public class UserController {
     }
 
     @PostMapping(consumes = "application/json")
-    public ResponseEntity<User> addUser(@RequestBody() User u){
-        // Does User with email already exist?
-        Optional<User> u1 = userRepo.findByEmail(u.getEmail());
-        if(u1.isEmpty()){
+    public ResponseEntity<?> addUser(@Valid @RequestBody User u) throws UserException{
         u.setPassword(passwordEncoder.encode(u.getPassword()));
-        User nu = userRepo.save(u);
-        nu.setPassword("");
-        return new ResponseEntity<User>(nu,HttpStatus.CREATED);
+        if(existsUserWithEmail(u)){
+            Map<String,String> errors = new HashMap<>();
+            errors.put("email", "Email already in use");
+            throw new UserException(errors);
         }
-        return new ResponseEntity<User>(HttpStatus.UNPROCESSABLE_ENTITY);
+
+        User nu = userRepo.save(u);
+        return new ResponseEntity<User>(nu,HttpStatus.CREATED);
+       
+    }
+
+    private boolean existsUserWithEmail(User u){
+        return userRepo.findByEmail(u.getEmail()).isPresent();
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(UserException.class)
+    public Map<String, String> handleUserException(UserException ex){
+        return ex.getErrors();
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public Map<String,String> handleValidationException(MethodArgumentNotValidException ex){
+        Map<String,String> errors = new HashMap<>();
+        ex.getBindingResult().getAllErrors().forEach((error) -> {
+            String fieldName = ((FieldError) error).getField();
+            String errorMessage = error.getDefaultMessage();
+            errors.put(fieldName, errorMessage);
+        });
+        return errors;
     }
 }
